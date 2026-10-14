@@ -1,0 +1,8 @@
+opencv-python
+numpy
+pandas
+scipy
+scikit-image
+openpyxl
+Pillow
+ultralytics   # only needed to TRAIN the CNNs

@@ -1,0 +1,69 @@
+# GermiCam crop registry — ONE place to describe each crop/experiment.
+#
+# Every script (pre_annotate_sam.py, run_track.py, germinate_from_detections.py,
+# build_report.py) reads this instead of hardcoded constants.
+#
+#   weights           trained YOLO-seg seed detector for this crop ('' = not trained yet)
+#   profile           key in profiles.py (germination cue parameters)
+#   frames_dir        timelapse folder (relative to germ/)
+#   seed_map          calibration map (dish circles + typical seed size)
+#   out_dir           where CSVs / Excel land
+#   n_dishes          petri dishes in frame
+#   seeds_per_dish    TRUE number of seeds sown per dish (the counting cap)
+#   scale             resize factor used when building the training images
+#   med_r_px          typical seed equivalent radius AT `scale` (from seed_map)
+#   prelabel          'colour' -> pre_annotate_color.py (kernel-colour mask + count-
+#                                 guided splitting; needs the seed to differ in colour
+#                                 from shoot and background — wheat: brown/green/grey)
+#                     'sam'    -> pre_annotate_sam.py (FastSAM segment-everything;
+#                                 for crops whose seeds are NOT colour-separable)
+#   tile_dishes       true  -> detect on per-dish crops (small/dense seeds)
+#                     false -> detect on the whole frame (large/sparse seeds)
+#   tile_px           output size of a dish tile in px (tile_dishes only)
+#   imgsz             inference/training network size
+#   dt_hours          time step between consecutive frames
+#
+# Sizing rule of thumb: the detector works when a seed is ~15-40 px at the
+# NETWORK input. apparent_px = 2 * med_r_px * (imgsz / image_width_at_scale).
+
+crops:
+
+  maize:
+    weights: runs/segment/train-3/weights/best.pt
+    profile: maize
+    frames_dir: ../maizeCam
+    seed_map: seed_map_maize.json
+    out_dir: ../out_maize
+    n_dishes: 5
+    seeds_per_dish: 6
+    scale: 0.5
+    med_r_px: 26.5
+    prelabel: sam          # pale kernel on pale blotter -> colour separation is weak
+    tile_dishes: false
+    tile_px: 1024
+    imgsz: 640
+    dt_hours: 0.5
+    # 2028 px wide @ imgsz 640 -> seed ~17 px at input. Validated:
+    # box mAP50 0.994, recall 0.994; 164/184 frames exactly 30 seeds.
+
+  wheat:
+    weights: ''            # <- filled in after training
+    profile: wheat
+    frames_dir: ../wheatCam
+    seed_map: seed_map_wheat.json
+    out_dir: ../out_wheat
+    n_dishes: 5
+    seeds_per_dish: 20
+    scale: 0.5
+    med_r_px: 14.3
+    prelabel: colour       # brown grain vs green shoot vs grey blotter separates cleanly
+    tile_dishes: true      # 100 small, touching seeds -> whole-frame detection starves
+    tile_px: 1024
+    imgsz: 640
+    dt_hours: 0.5
+    # Prelabel measured on 150 tiles: colour 140/150 (93%) at exactly 20 seeds,
+    # FastSAM only 7/150 (5%) — FastSAM segments the whole SEEDLING, not the grain.
+    # Whole-frame would give 2*14.3*(640/2028) = 9 px seeds -> too small.
+    # A dish tile is ~2*264*1.06 = 560 px @scale 0.5, upscaled to tile_px 1024;
+    # at imgsz 640 a seed is 2*14.3*(1024/560)*(640/1024) = 33 px at input.
+    # Same regime as the validated maize detector, and only 20 seeds per image.

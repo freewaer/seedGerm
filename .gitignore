@@ -1,0 +1,21 @@
+# Whitelist: ignore everything, then re-include only the base code.
+/*
+!/.gitignore
+!/README.md
+!/CVAT.md
+!/WHEAT.md
+!/requirements.txt
+!/start-cvat.cmd
+!/stop-cvat.cmd
+!/germ/
+
+# Inside germ/: only source, config and docs
+/germ/*
+!/germ/*.py
+!/germ/*.yaml
+!/germ/*.md
+!/germ/seed_map_*.json
+/germ/_*.py
+
+__pycache__/
+*.pyc
